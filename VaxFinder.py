@@ -4,15 +4,19 @@ from playsound import playsound
 import os
 
 def playit(name):
+    #for linux
     os.system(f'mpg123 "{name}"')
 def chkAndPlay(d,curr):
     if curr['name'] in d:
         if curr['date'] not in d[curr['name']]:
             d[curr['name']][curr['date']]=curr['avail']
             playit('Five Little Ducks.mp3')
+            return True
     else:
         playit('Five Little Ducks.mp3')
         d[curr['name']] = {curr['date']:curr['avail']}
+        return True
+    return False
 def query(Q):
     url = 'https://cdn-api.co-vin.in/api{}'
     response=requests.get(url.format(Q))
@@ -39,10 +43,11 @@ def getAvailbyDis(disName,date,stateCode=9,d={}):
             if session['available_capacity']>0 and session['min_age_limit']==18:
                 print(center['name'],session['date'],session['available_capacity'],disName)
                 newD={'name':center['name'],'date':session['date'],'avail':session['available_capacity']}
-                chkAndPlay(d,newD)
-                file = open(f'vaccx_{stateCode}.txt','a')
-                file.write(f"{center['name']}_{session['date']}_{session['available_capacity'],{disName}}\n")
-                file.close()
+                flg=chkAndPlay(d,newD)
+                if flg:
+                    file = open(f'vaccx_{stateCode}.txt','a')
+                    file.write(f"{center['name']}_{session['date']}_{session['available_capacity'],{disName}}\n")
+                    file.close()
 def getAvailbyState(statecode,d={}):
     districts = query(f'/v2/admin/location/districts/{statecode}')['districts']
     for district in districts:
