@@ -2,8 +2,13 @@ import requests
 import time
 from playsound import playsound
 import os
-#uncomment for windows
-#import winsound
+from text_to_speech import speak
+from sys import platform
+from datetime import date,timedelta
+try:
+    import winsound
+except:
+    pass
 class VaccineAvailability:
     def __init__(self):
         self.d={}
@@ -48,10 +53,10 @@ class VaccineAvailability:
                 if session['available_capacity']>0 and session['min_age_limit']==18:
                     print(center['name'],session['date'],session['available_capacity'],addr)
                     newD={'name':center['name'],'date':session['date'],'avail':session['available_capacity']}
-                    self.chkAndPlay(newD)
-                    file = open(f'vaccx_{stateCode}.txt','a')
-                    file.write(f"{center['name']}_{session['date']}_{session['available_capacity'],{addr}}\n")
-                    file.close()
+                    if(self.chkAndPlay(newD)):
+                        file = open(f'vaccx_{stateCode}.txt','a')
+                        file.write(f"{center['name']}_{session['date']}_{session['available_capacity'],{addr}}\n")
+                        file.close()
     def getAvailbyDis(self,disName,date,stateCode=9):
         disCode = self.findDisCode(disName,stateCode)['district_id']
         response = self.query(f'/v2/appointment/sessions/public/calendarByDistrict?district_id={disCode}&date={date}')
@@ -61,7 +66,7 @@ class VaccineAvailability:
         response = self.query(f'/v2/appointment/sessions/public/calendarByPin?pincode={PIN}&date={date}')
         centers = response['centers']
         self.getCenterDetails(centers,PIN,stateCode)
-    def getAvailbyState(self,stateName=9,noW=2):
+    def getAvailbyState(self,stateName='Delhi',noW=2):
         statecode = self.findStateCode(stateName)['state_id']
         districts = self.query(f'/v2/admin/location/districts/{statecode}')['districts']
         curr_date = date.today()
@@ -88,6 +93,7 @@ val=0
 Delhi=VaccineAvailability() 
 while val<900:
     Delhi.getAvailbyState()
+    Delhi.QueriedPINs(['110022'])
     print(val)
     time.sleep(60)
     val+=1
