@@ -31,13 +31,14 @@ class VaccineAvailability:
             return True
         return False
     def query(self,Q):
+        Q=Q.replace('/public','')
         url = 'https://cdn-api.co-vin.in/api{}'
         headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
         response=requests.get(url.format(Q),headers=headers)
         while response.status_code!=200:
             print(response.status_code)
             time.sleep(60)
-            response=requests.get(url.format(Q))
+            response=requests.get(url.format(Q),headers=headers)
         return response.json()
     def finder(self,name,nameList,key):
         for i in nameList:
