@@ -32,7 +32,12 @@ class VaccineAvailability:
         return False
     def query(self,Q):
         url = 'https://cdn-api.co-vin.in/api{}'
-        response=requests.get(url.format(Q))
+        headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
+        response=requests.get(url.format(Q),headers=headers)
+        while response.status_code!=200:
+            print(response.status_code)
+            time.sleep(60)
+            response=requests.get(url.format(Q))
         return response.json()
     def finder(self,name,nameList,key):
         for i in nameList:
@@ -92,8 +97,8 @@ class VaccineAvailability:
 val=0
 Delhi=VaccineAvailability() 
 while val<900:
+    print(val)
     Delhi.getAvailbyState()
     Delhi.QueriedPINs(['110022'])
-    print(val)
     time.sleep(60)
     val+=1
