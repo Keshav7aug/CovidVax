@@ -14,7 +14,7 @@ class VaccineAvailability:
         self.d={}
     def playit(self,name):
         if platform == 'linux':
-            os.system(f'mpg123 "{name}"')
+            os.system(f'mpg123 -q -k 300 "{name}"')
         else:
             winsound.PlaySound('Five Little Ducks.wav',winsound.SND_FILENAME)
     def txt2Spch(self,words):
@@ -35,10 +35,8 @@ class VaccineAvailability:
         url = 'https://cdn-api.co-vin.in/api{}'
         headers={'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36'}
         response=requests.get(url.format(Q),headers=headers)
-        while response.status_code!=200:
-            print(response.status_code)
-            time.sleep(60)
-            response=requests.get(url.format(Q),headers=headers)
+        if response.status_code!=200:
+            print(response.status_code,response.url)
         return response.json()
     def finder(self,name,nameList,key):
         for i in nameList:
@@ -52,12 +50,12 @@ class VaccineAvailability:
     def findDisCode(self,disName,stateCode=9):
         Districts = self.query(f'/v2/admin/location/districts/{stateCode}')['districts']
         return self.finder(disName,Districts,'district_name')
-    def getCenterDetails(self,centers,addr,stateCode=9):
+    def getCenterDetails(self,centers,addr):
         for center in centers:
             sessions = center['sessions']
             for session in sessions:
                 if session['available_capacity']>0 and session['min_age_limit']==18:
-                    print(center['name'],session['date'],session['available_capacity'],addr)
+                    print(center['name'],session['date'],session['available_capacity'],session['vaccine'],addr)
                     newD={'name':center['name'],'date':session['date'],'avail':session['available_capacity']}
                     if(self.chkAndPlay(newD)):
                         file = open(f'vaccx_{stateCode}.txt','a')
@@ -67,11 +65,11 @@ class VaccineAvailability:
         disCode = self.findDisCode(disName,stateCode)['district_id']
         response = self.query(f'/v2/appointment/sessions/public/calendarByDistrict?district_id={disCode}&date={date}')
         centers = response['centers']
-        self.getCenterDetails(centers,disName,stateCode)
-    def getAvailbyPIN(self,PIN,date,stateCode=9):
+        self.getCenterDetails(centers,disName)
+    def getAvailbyPIN(self,PIN,date):
         response = self.query(f'/v2/appointment/sessions/public/calendarByPin?pincode={PIN}&date={date}')
         centers = response['centers']
-        self.getCenterDetails(centers,PIN,stateCode)
+        self.getCenterDetails(centers,PIN)
     def getAvailbyState(self,stateName='Delhi',noW=2):
         statecode = self.findStateCode(stateName)['state_id']
         districts = self.query(f'/v2/admin/location/districts/{statecode}')['districts']
@@ -81,25 +79,31 @@ class VaccineAvailability:
             for district in districts:
                 self.getAvailbyDis(district['district_name'],quer_date.strftime("%d-%m-%Y"))
     def QueriedDistricts(self,DistrictList,stateCode=9,noW=2):
-        curr_date = date.today()
-        for i in range(noW):
-            quer_date = curr_date+timedelta(7*i)
-            quer_date=quer_date.strftime("%d-%m-%Y")
-            for district in DistrictList:
-                self.getAvailbyDis(district,quer_date,stateCode)
-    def QueriedPINs(self,PINList,stateCode=9,noW=2):
-        curr_date = date.today()
-        for i in range(noW):
-            quer_date = curr_date+timedelta(7*i)
-            quer_date=quer_date.strftime("%d-%m-%Y")
-            for PIN in PINList:
-                self.getAvailbyPIN(PIN,quer_date,stateCode)
+        try:
+            curr_date = date.today()
+            for i in range(noW):
+                quer_date = curr_date+timedelta(7*i)
+                quer_date=quer_date.strftime("%d-%m-%Y")
+                for district in DistrictList:
+                    self.getAvailbyDis(district,quer_date,stateCode)
+        except:
+            pass
+    def QueriedPINs(self,PINList,noW=2):
+        try:
+            curr_date = date.today()
+            for i in range(noW):
+                quer_date = curr_date+timedelta(7*i)
+                quer_date=quer_date.strftime("%d-%m-%Y")
+                for PIN in PINList:
+                    self.getAvailbyPIN(PIN,quer_date)
+        except:
+            pass
 
 val=0
-Delhi=VaccineAvailability() 
-while val<900:
+Vax=VaccineAvailability()
+AllPins = ['110022'] 
+while True:
     print(val)
-    Delhi.getAvailbyState()
-    Delhi.QueriedPINs(['110022'])
-    time.sleep(60)
+    Vax.QueriedPINs(AllPins)
+    time.sleep(10)
     val+=1
