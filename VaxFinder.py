@@ -60,11 +60,11 @@ class VaccineAvailability:
                     print(center['name'],session['date'],session['available_capacity'],session['vaccine'],addr)
                     newD={'name':center['name'],'date':session['date'],'avail':session['available_capacity']}
                     if(self.chkAndPlay(newD)):
-                        file = open(f'vaccx_{stateCode}.txt','a')
+                        file = open(f'vaccx_{addr}.txt','a')
                         file.write(f"{center['name']}_{session['date']}_{session['available_capacity'],{addr}}\n")
                         file.close()
-    def getAvailbyDis(self,disName,date,stateCode=9):
-        disCode = self.findDisCode(disName,stateCode)['district_id']
+    def getAvailbyDis(self,disName,date,stateName='Delhi'):
+        disCode = self.findDisCode(disName,stateName)
         response = self.query(f'/v2/appointment/sessions/public/calendarByDistrict?district_id={disCode}&date={date}')
         centers = response['centers']
         self.getCenterDetails(centers,disName)
@@ -73,22 +73,26 @@ class VaccineAvailability:
         centers = response['centers']
         self.getCenterDetails(centers,PIN)
     def getAvailbyState(self,stateName='Delhi',noW=1):
-        statecode = self.findStateCode(stateName)['state_id']
+        statecode = self.findStateCode(stateName)
         districts = self.query(f'/v2/admin/location/districts/{statecode}')['districts']
         curr_date = date.today()
         for i in range(noW):
             quer_date = date.today()+timedelta(7*i)
             for district in districts:
-                self.getAvailbyDis(district['district_name'],quer_date.strftime("%d-%m-%Y"))
-    def QueriedDistricts(self,DistrictList,stateCode=9,noW=1):
+                try:
+                    self.getAvailbyDis(district['district_name'],quer_date.strftime("%d-%m-%Y"))
+                except:
+                    pass
+    def QueriedDistricts(self,DistrictList,stateName='Delhi',noW=1):
         try:
             curr_date = date.today()
             for i in range(noW):
                 quer_date = curr_date+timedelta(7*i)
                 quer_date=quer_date.strftime("%d-%m-%Y")
                 for district in DistrictList:
-                    self.getAvailbyDis(district,quer_date,stateCode)
-        except:
+                    self.getAvailbyDis(district,quer_date,stateName)
+        except Exception as E:
+            print(E)
             pass
     def QueriedPINs(self,PINList,noW=1):
         try:
@@ -103,10 +107,11 @@ class VaccineAvailability:
 
 val=0
 Vax=VaccineAvailability()
-AllPins = ['110022'] 
+AllPins = [] 
 while True:
     print(val)
-    Vax.QueriedPINs(AllPins)
+    #Vax.getAvailbyState()
+    #Vax.QueriedPINs(AllPins)
     Vax.QueriedDistricts([])
     time.sleep(10)
     val+=1
