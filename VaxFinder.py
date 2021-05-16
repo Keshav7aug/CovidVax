@@ -1,8 +1,9 @@
 import requests
 import time
-from playsound import playsound
+import json
+#from playsound import playsound
 import os
-from text_to_speech import speak
+#from text_to_speech import speak
 from sys import platform
 from datetime import date,timedelta
 try:
@@ -17,8 +18,8 @@ class VaccineAvailability:
             os.system(f'mpg123 -q -k 300 "{name}"')
         else:
             winsound.PlaySound('Five Little Ducks.wav',winsound.SND_FILENAME)
-    def txt2Spch(self,words):
-        speak(words, "en", save=False)
+    # def txt2Spch(self,words):
+    #     speak(words, "en", save=False)
     def chkAndPlay(self,curr):
         if curr['name'] in self.d:
             if curr['date'] not in self.d[curr['name']]:
@@ -44,12 +45,13 @@ class VaccineAvailability:
                 return i
         return False
     def findStateCode(self,name):
-        res=self.query('/v2/admin/location/states')
-        states = res['states']
-        return self.finder(name,states,'state_name')
-    def findDisCode(self,disName,stateCode=9):
-        Districts = self.query(f'/v2/admin/location/districts/{stateCode}')['districts']
-        return self.finder(disName,Districts,'district_name')
+        with open('States.json') as f:
+            data = json.load(f) 
+        return data[name]
+    def findDisCode(self,disName,stateName='Delhi'):
+        with open(f'Districts/{stateName}.json') as f:
+            data = json.load(f) 
+        return data[disName]
     def getCenterDetails(self,centers,addr):
         for center in centers:
             sessions = center['sessions']
@@ -70,7 +72,7 @@ class VaccineAvailability:
         response = self.query(f'/v2/appointment/sessions/public/calendarByPin?pincode={PIN}&date={date}')
         centers = response['centers']
         self.getCenterDetails(centers,PIN)
-    def getAvailbyState(self,stateName='Delhi',noW=2):
+    def getAvailbyState(self,stateName='Delhi',noW=1):
         statecode = self.findStateCode(stateName)['state_id']
         districts = self.query(f'/v2/admin/location/districts/{statecode}')['districts']
         curr_date = date.today()
@@ -78,7 +80,7 @@ class VaccineAvailability:
             quer_date = date.today()+timedelta(7*i)
             for district in districts:
                 self.getAvailbyDis(district['district_name'],quer_date.strftime("%d-%m-%Y"))
-    def QueriedDistricts(self,DistrictList,stateCode=9,noW=2):
+    def QueriedDistricts(self,DistrictList,stateCode=9,noW=1):
         try:
             curr_date = date.today()
             for i in range(noW):
@@ -88,7 +90,7 @@ class VaccineAvailability:
                     self.getAvailbyDis(district,quer_date,stateCode)
         except:
             pass
-    def QueriedPINs(self,PINList,noW=2):
+    def QueriedPINs(self,PINList,noW=1):
         try:
             curr_date = date.today()
             for i in range(noW):
@@ -105,5 +107,6 @@ AllPins = ['110022']
 while True:
     print(val)
     Vax.QueriedPINs(AllPins)
+    Vax.QueriedDistricts([])
     time.sleep(10)
     val+=1
